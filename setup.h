@@ -100,7 +100,7 @@ void set_git_work_tree(struct repository *repo, const char *tree);
 const char *setup_git_directory_gently(struct repository *, int *);
 const char *setup_git_directory(struct repository *);
 char *prefix_path(struct repository *repo, const char *prefix, int len, const char *path);
-char *prefix_path_gently(const char *prefix, int len, int *remaining, const char *path);
+char *prefix_path_gently(struct repository *repo, const char *prefix, int len, int *remaining, const char *path);
 
 int check_filename(const char *prefix, const char *name);
 void verify_filename(struct repository *repo,
@@ -108,7 +108,7 @@ void verify_filename(struct repository *repo,
 		     const char *name,
 		     int diagnose_misspelt_rev);
 void verify_non_filename(struct repository *repo, const char *prefix, const char *name);
-int path_inside_repo(const char *prefix, const char *path);
+int path_inside_repo(struct repository *repo, const char *prefix, const char *path);
 
 void sanitize_stdfds(void);
 int daemonize(void);
