@@ -511,7 +511,7 @@ void setup_work_tree(struct repository *repo)
 	initialized = 1;
 }
 
-static void setup_original_cwd(void)
+static void setup_original_cwd(struct repository *repo)
 {
 	struct strbuf tmp = STRBUF_INIT;
 	const char *worktree = NULL;
@@ -537,9 +537,9 @@ static void setup_original_cwd(void)
 
 	/* Normalize the directory */
 	if (!strbuf_realpath(&tmp, tmp_original_cwd, 0)) {
-		trace2_data_string("setup", the_repository,
+		trace2_data_string("setup", repo,
 				   "realpath-path", tmp_original_cwd);
-		trace2_data_string("setup", the_repository,
+		trace2_data_string("setup", repo,
 				   "realpath-failure", strerror(errno));
 		free((char*)tmp_original_cwd);
 		tmp_original_cwd = NULL;
@@ -554,7 +554,7 @@ static void setup_original_cwd(void)
 	 * Get our worktree; we only protect the current working directory
 	 * if it's in the worktree.
 	 */
-	worktree = repo_get_work_tree(the_repository);
+	worktree = repo_get_work_tree(repo);
 	if (!worktree)
 		goto no_prevention_needed;
 
@@ -1879,7 +1879,7 @@ const char *setup_git_directory_gently(struct repository *repo, int *nongit_ok)
 		setenv(GIT_PREFIX_ENVIRONMENT, "", 1);
 	}
 
-	setup_original_cwd();
+	setup_original_cwd(repo);
 
 	strbuf_release(&dir);
 	strbuf_release(&gitdir);
