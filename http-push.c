@@ -1782,7 +1782,7 @@ int cmd_main(int argc, const char **argv)
 	if (delete_branch && rs.nr != 1)
 		die("You must specify only one branch name when deleting a remote branch");
 
-	setup_git_directory();
+	setup_git_directory(the_repository);
 
 	memset(remote_dir_exists, -1, 256);
 
@@ -1935,7 +1935,7 @@ int cmd_main(int argc, const char **argv)
 		if (!push_all && !is_null_oid(&ref->old_oid))
 			strvec_pushf(&commit_argv, "^%s",
 				     oid_to_hex(&ref->old_oid));
-		repo_init_revisions(the_repository, &revs, setup_git_directory());
+		repo_init_revisions(the_repository, &revs, setup_git_directory(the_repository));
 		setup_revisions(commit_argv.nr, commit_argv.v, &revs, NULL);
 		revs.edge_hint = 0; /* just in case */
 

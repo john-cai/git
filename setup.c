@@ -1719,7 +1719,7 @@ void set_git_work_tree(const char *new_work_tree)
 	repo_set_worktree(the_repository, new_work_tree);
 }
 
-const char *setup_git_directory_gently(int *nongit_ok)
+const char *setup_git_directory_gently(struct repository *repo, int *nongit_ok)
 {
 	static struct strbuf cwd = STRBUF_INIT;
 	struct strbuf dir = STRBUF_INIT, gitdir = STRBUF_INIT, report = STRBUF_INIT;
@@ -1840,22 +1840,22 @@ const char *setup_git_directory_gently(int *nongit_ok)
 	    startup_info->have_repository ||
 	    /* GIT_DIR_EXPLICIT */
 	    getenv(GIT_DIR_ENVIRONMENT)) {
-		if (!the_repository->gitdir) {
+		if (!repo->gitdir) {
 			const char *gitdir = getenv(GIT_DIR_ENVIRONMENT);
 			if (!gitdir)
 				gitdir = DEFAULT_GIT_DIR_ENVIRONMENT;
 			setup_git_env(gitdir);
 		}
 		if (startup_info->have_repository) {
-			repo_set_hash_algo(the_repository, repo_fmt.hash_algo);
-			repo_set_compat_hash_algo(the_repository,
+			repo_set_hash_algo(repo, repo_fmt.hash_algo);
+			repo_set_compat_hash_algo(repo,
 						  repo_fmt.compat_hash_algo);
-			repo_set_ref_storage_format(the_repository,
+			repo_set_ref_storage_format(repo,
 						    repo_fmt.ref_storage_format);
-			the_repository->repository_format_worktree_config =
+			repo->repository_format_worktree_config =
 				repo_fmt.worktree_config;
 			/* take ownership of repo_fmt.partial_clone */
-			the_repository->repository_format_partial_clone =
+			repo->repository_format_partial_clone =
 				repo_fmt.partial_clone;
 			repo_fmt.partial_clone = NULL;
 		}
@@ -1961,9 +1961,9 @@ void check_repository_format(struct repository_format *fmt)
  * directory is not a strict subdirectory of the work tree root. The
  * prefix always ends with a '/' character.
  */
-const char *setup_git_directory(void)
+const char *setup_git_directory(struct repository *repo)
 {
-	return setup_git_directory_gently(NULL);
+	return setup_git_directory_gently(repo, NULL);
 }
 
 const char *resolve_gitdir_gently(const char *suspect, int *return_error_code)

@@ -108,7 +108,7 @@ int cmd_merge_file(int argc,
 	}
 
 	if (object_id)
-		setup_git_directory();
+		setup_git_directory(the_repository);
 
 	for (i = 0; i < 3; i++) {
 		char *fname;

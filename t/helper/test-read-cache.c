@@ -20,7 +20,7 @@ int cmd__read_cache(int argc, const char **argv)
 
 	if (argc == 2)
 		cnt = strtol(argv[1], NULL, 0);
-	setup_git_directory();
+	setup_git_directory(the_repository);
 	git_config(git_default_config, NULL);
 
 	for (i = 0; i < cnt; i++) {
