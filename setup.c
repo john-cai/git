@@ -2388,12 +2388,12 @@ static int create_default_files(struct repository *repo,
 	return reinit;
 }
 
-static void create_object_directory(void)
+static void create_object_directory(struct repository *repo)
 {
 	struct strbuf path = STRBUF_INIT;
 	size_t baselen;
 
-	strbuf_addstr(&path, repo_get_object_directory(the_repository));
+	strbuf_addstr(&path, repo_get_object_directory(repo));
 	baselen = path.len;
 
 	safe_create_dir(path.buf, 1);
@@ -2579,7 +2579,7 @@ int init_db(struct repository *repo, const char *git_dir, const char *real_git_d
 	if (!(flags & INIT_DB_SKIP_REFDB))
 		create_reference_database(repo, repo_fmt.ref_storage_format,
 					  initial_branch, flags & INIT_DB_QUIET);
-	create_object_directory();
+	create_object_directory(repo);
 
 	if (get_shared_repository()) {
 		char buf[10];
