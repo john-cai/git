@@ -125,8 +125,9 @@ const char *strip_namespace(const char *namespaced_ref);
  *
  * Please do not add new global config variables here.
  */
+void setup_git_env(struct repository *repo, const char *git_dir);
+
 # ifdef USE_THE_REPOSITORY_VARIABLE
-void setup_git_env(const char *git_dir);
 
 /*
  * Returns true iff we have a configured git repository (either via

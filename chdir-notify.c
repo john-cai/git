@@ -5,6 +5,7 @@
 #include "path.h"
 #include "strbuf.h"
 #include "trace.h"
+#include "repository.h"
 
 struct chdir_notify_entry {
 	const char *name;
@@ -25,7 +26,7 @@ void chdir_notify_register(const char *name,
 	list_add_tail(&e->list, &chdir_notify_entries);
 }
 
-static void reparent_cb(const char *name,
+static void reparent_cb(struct repository *repo UNUSED, const char *name,
 			const char *old_cwd,
 			const char *new_cwd,
 			void *data)
@@ -51,7 +52,7 @@ void chdir_notify_reparent(const char *name, char **path)
 	chdir_notify_register(name, reparent_cb, path);
 }
 
-int chdir_notify(const char *new_cwd)
+int chdir_notify(struct repository *repo, const char *new_cwd)
 {
 	struct strbuf old_cwd = STRBUF_INIT;
 	struct list_head *pos;
@@ -72,7 +73,7 @@ int chdir_notify(const char *new_cwd)
 	list_for_each(pos, &chdir_notify_entries) {
 		struct chdir_notify_entry *e =
 			list_entry(pos, struct chdir_notify_entry, list);
-		e->cb(e->name, old_cwd.buf, new_cwd, e->data);
+		e->cb(repo, e->name, old_cwd.buf, new_cwd, e->data);
 	}
 
 	strbuf_release(&old_cwd);

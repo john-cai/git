@@ -755,7 +755,7 @@ const char *enter_repo(const char *path, int strict)
 	}
 
 	if (is_git_directory(".")) {
-		set_git_dir(".", 0);
+		set_git_dir(the_repository, ".", 0);
 		check_repository_format(the_repository, NULL);
 		return path;
 	}
