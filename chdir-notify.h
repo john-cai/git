@@ -1,6 +1,8 @@
 #ifndef CHDIR_NOTIFY_H
 #define CHDIR_NOTIFY_H
 
+#include "repository.h"
+
 /*
  * An API to let code "subscribe" to changes to the current working directory.
  * The general idea is that some code asks to be notified when the working
@@ -36,7 +38,8 @@
  * $GIT_TRACE_SETUP. It may be NULL, but if non-NULL should point to
  * storage which lasts as long as the registration is active.
  */
-typedef void (*chdir_notify_callback)(const char *name,
+typedef void (*chdir_notify_callback)(struct repository *repo,
+				      const char *name,
 				      const char *old_cwd,
 				      const char *new_cwd,
 				      void *data);
@@ -55,7 +58,7 @@ void chdir_notify_reparent(const char *name, char **path);
  * to a directory and back, as long as you don't call any subscribed code in
  * between (but it should be safe to do so if you're unsure).
  */
-int chdir_notify(const char *new_cwd);
+int chdir_notify(struct repository *repo, const char *new_cwd);
 
 /*
  * Reparent a relative path from old_root to new_root. For example:

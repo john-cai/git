@@ -17,7 +17,7 @@ static void test_parse_commit_in_graph(const char *gitdir, const char *worktree,
 	struct commit *c;
 	struct commit_list *parent;
 
-	setup_git_env(gitdir);
+	setup_git_env(the_repository, gitdir);
 
 	repo_clear(the_repository);
 
@@ -47,7 +47,7 @@ static void test_get_commit_tree_in_graph(const char *gitdir,
 	struct commit *c;
 	struct tree *tree;
 
-	setup_git_env(gitdir);
+	setup_git_env(the_repository, gitdir);
 
 	repo_clear(the_repository);
 
