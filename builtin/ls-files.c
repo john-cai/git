@@ -692,7 +692,7 @@ int cmd_ls_files(int argc,
 		exc_given = 1;
 
 	if (require_work_tree && !is_inside_work_tree(the_repository))
-		setup_work_tree();
+		setup_work_tree(the_repository);
 
 	if (recurse_submodules &&
 	    (show_deleted || show_others || show_unmerged ||

@@ -117,7 +117,7 @@ int cmd_check_attr(int argc,
 	int cnt, i, doubledash, filei;
 
 	if (!is_bare_repository())
-		setup_work_tree();
+		setup_work_tree(the_repository);
 
 	git_config(git_default_config, NULL);
 
