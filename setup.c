@@ -994,7 +994,8 @@ cleanup_return:
 	return error_code ? NULL : path;
 }
 
-static const char *setup_explicit_git_dir(const char *gitdirenv,
+static const char *setup_explicit_git_dir(struct repository *repo,
+					  const char *gitdirenv,
 					  struct strbuf *cwd,
 					  struct repository_format *repo_fmt,
 					  int *nongit_ok)
@@ -1068,7 +1069,7 @@ static const char *setup_explicit_git_dir(const char *gitdirenv,
 		set_git_work_tree(".");
 
 	/* set_git_work_tree() must have been called by now */
-	worktree = repo_get_work_tree(the_repository);
+	worktree = repo_get_work_tree(repo);
 
 	/* both repo_get_work_tree() and cwd are already normalized */
 	if (!strcmp(cwd->buf, worktree)) { /* cwd == worktree */
@@ -1093,7 +1094,8 @@ static const char *setup_explicit_git_dir(const char *gitdirenv,
 	return NULL;
 }
 
-static const char *setup_discovered_git_dir(const char *gitdir,
+static const char *setup_discovered_git_dir(struct repository *repo,
+					    const char *gitdir,
 					    struct strbuf *cwd, int offset,
 					    struct repository_format *repo_fmt,
 					    int *nongit_ok)
@@ -1110,7 +1112,7 @@ static const char *setup_discovered_git_dir(const char *gitdir,
 			gitdir = to_free = real_pathdup(gitdir, 1);
 		if (chdir(cwd->buf))
 			die_errno(_("cannot come back to cwd"));
-		ret = setup_explicit_git_dir(gitdir, cwd, repo_fmt, nongit_ok);
+		ret = setup_explicit_git_dir(repo, gitdir, cwd, repo_fmt, nongit_ok);
 		free(to_free);
 		return ret;
 	}
@@ -1141,7 +1143,7 @@ static const char *setup_discovered_git_dir(const char *gitdir,
 }
 
 /* #16.1, #17.1, #20.1, #21.1, #22.1 (see t1510) */
-static const char *setup_bare_git_dir(struct strbuf *cwd, int offset,
+static const char *setup_bare_git_dir(struct repository *repo, struct strbuf *cwd, int offset,
 				      struct repository_format *repo_fmt,
 				      int *nongit_ok)
 {
@@ -1159,7 +1161,7 @@ static const char *setup_bare_git_dir(struct strbuf *cwd, int offset,
 		gitdir = offset == cwd->len ? "." : xmemdupz(cwd->buf, offset);
 		if (chdir(cwd->buf))
 			die_errno(_("cannot come back to cwd"));
-		return setup_explicit_git_dir(gitdir, cwd, repo_fmt, nongit_ok);
+		return setup_explicit_git_dir(repo, gitdir, cwd, repo_fmt, nongit_ok);
 	}
 
 	inside_git_dir = 1;
@@ -1749,18 +1751,18 @@ const char *setup_git_directory_gently(struct repository *repo, int *nongit_ok)
 
 	switch (setup_git_directory_gently_1(&dir, &gitdir, &report, 1)) {
 	case GIT_DIR_EXPLICIT:
-		prefix = setup_explicit_git_dir(gitdir.buf, &cwd, &repo_fmt, nongit_ok);
+		prefix = setup_explicit_git_dir(repo, gitdir.buf, &cwd, &repo_fmt, nongit_ok);
 		break;
 	case GIT_DIR_DISCOVERED:
 		if (dir.len < cwd.len && chdir(dir.buf))
 			die(_("cannot change to '%s'"), dir.buf);
-		prefix = setup_discovered_git_dir(gitdir.buf, &cwd, dir.len,
+		prefix = setup_discovered_git_dir(repo, gitdir.buf, &cwd, dir.len,
 						  &repo_fmt, nongit_ok);
 		break;
 	case GIT_DIR_BARE:
 		if (dir.len < cwd.len && chdir(dir.buf))
 			die(_("cannot change to '%s'"), dir.buf);
-		prefix = setup_bare_git_dir(&cwd, dir.len, &repo_fmt, nongit_ok);
+		prefix = setup_bare_git_dir(repo, &cwd, dir.len, &repo_fmt, nongit_ok);
 		break;
 	case GIT_DIR_HIT_CEILING:
 		if (!nongit_ok)
