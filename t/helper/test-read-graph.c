@@ -76,7 +76,7 @@ int cmd__read_graph(int argc, const char **argv)
 	struct object_directory *odb;
 	int ret = 0;
 
-	setup_git_directory();
+	setup_git_directory(the_repository);
 	odb = the_repository->objects->odb;
 
 	prepare_repo_settings(the_repository);

@@ -10,7 +10,7 @@ int cmd__advise_if_enabled(int argc, const char **argv)
 	if (argc != 2)
 		die("usage: %s <advice>", argv[0]);
 
-	setup_git_directory();
+	setup_git_directory(the_repository);
 	git_config(git_default_config, NULL);
 
 	/*

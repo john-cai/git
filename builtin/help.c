@@ -705,7 +705,7 @@ int cmd_help(int argc,
 		return 0;
 	}
 
-	setup_git_directory_gently(&nongit);
+	setup_git_directory_gently(the_repository, &nongit);
 	git_config(git_help_config, NULL);
 
 	if (parsed_help_format != HELP_FORMAT_NONE)
