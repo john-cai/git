@@ -1,0 +1,28 @@
+git-psuh(1)
+===========
+
+NAME
+----
+git-psuh - Delight users' typo with a shy horse
+
+
+SYNOPSIS
+--------
+[verse]
+'git-psuh [<arg>...]'
+
+DESCRIPTION
+-----------
+A charming command to print out some information about the user's context
+
+OPTIONS[[OPTIONS]]
+------------------
+...
+
+OUTPUT
+------
+The number of arguments, the arguments themselves, the current working directory, the user's name, and the current branch and its commit message
+
+GIT
+---
+Part of the git[1] suite
