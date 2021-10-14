@@ -1013,16 +1013,6 @@ static struct ref_lock *lock_ref_oid_basic(struct files_ref_store *refs,
 	CALLOC_ARRAY(lock, 1);
 
 	files_ref_path(refs, &ref_file, refname);
-	if (!refs_resolve_ref_unsafe(&refs->base, refname,
-				     RESOLVE_REF_NO_RECURSE,
-				     &lock->old_oid, type)) {
-		if (!refs_verify_refname_available(&refs->base, refname,
-						   NULL, NULL, err))
-			strbuf_addf(err, "unable to resolve reference '%s': %s",
-				    refname, strerror(errno));
-
-		goto error_return;
-	}
 
 	/*
 	 * If the ref did not exist and we are creating it, make sure
@@ -1364,14 +1354,14 @@ static int commit_ref_update(struct files_ref_store *refs,
 			     struct strbuf *err);
 
 /*
- * Check whether an attempt to rename old_refname to new_refname would
- * cause a D/F conflict with any existing reference (other than
- * possibly old_refname). If there would be a conflict, emit an error
+ * Emit a better error message than lockfile.c's
+ * unable_to_lock_message() would in case there is a D/F conflict with
+ * another existing reference. If there would be a conflict, emit an error
  * message and return false; otherwise, return true.
  *
  * Note that this function is not safe against all races with other
- * processes (though rename_ref() catches some races that might get by
- * this check).
+ * processes, and that's not its job. We'll emit a more verbose error on D/f
+ * conflicts if we get past it into lock_ref_oid_basic().
  */
 static int refs_rename_ref_available(struct ref_store *refs,
 			      const char *old_refname,
