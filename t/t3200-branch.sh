@@ -745,6 +745,7 @@ test_expect_success SYMLINKS 'git branch -m with symlinked .git/refs' '
 	) &&
 	git --git-dir subdir/.git/ branch rename-src &&
 	git rev-parse rename-src >expect &&
+	# Tests a BUG() assertion in files_read_raw_ref()
 	git --git-dir subdir/.git/ branch -m rename-src rename-dest &&
 	git rev-parse rename-dest >actual &&
 	test_cmp expect actual &&
