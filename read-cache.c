@@ -2338,8 +2338,11 @@ int do_read_index(struct index_state *istate, const char *path, int must_exist)
 	if (!istate->repo)
 		istate->repo = the_repository;
 	prepare_repo_settings(istate->repo);
-	if (istate->repo->settings.command_requires_full_index)
+	if (!istate->repo->settings.sparse_index ||
+	    istate->repo->settings.command_requires_full_index)
 		ensure_full_index(istate);
+	else if (!istate->sparse_index)
+		convert_to_sparse(istate, 0);
 
 	return istate->cache_nr;
 
