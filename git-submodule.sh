@@ -449,6 +449,20 @@ cmd_update()
 			;;
 		esac
 
+		# Cache a pointer to the superproject's gitdir. This may have
+		# changed, unless it's a fresh clone. Writes it to worktree
+		# if applicable, otherwise to local.
+		if test -z "$just_cloned"
+		then
+			sm_gitdir="$(git -C "$sm_path" rev-parse --absolute-git-dir)"
+			relative_gitdir="$(git rev-parse --path-format=relative \
+							 --prefix "${sm_gitdir}" \
+							 --git-dir)"
+
+			git -C "$sm_path" config --worktree \
+				submodule.superprojectgitdir "$relative_gitdir"
+		fi
+
 		if test -n "$recursive"
 		then
 			(

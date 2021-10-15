@@ -30,7 +30,17 @@ test_expect_success 'absorb the git dir' '
 	git status >actual.1 &&
 	git -C sub1 rev-parse HEAD >actual.2 &&
 	test_cmp expect.1 actual.1 &&
-	test_cmp expect.2 actual.2
+	test_cmp expect.2 actual.2 &&
+
+	# make sure the submodule cached the superproject gitdir correctly
+	submodule_gitdir="$(git -C sub1 rev-parse --absolute-git-dir)" &&
+	superproject_gitdir="$(git rev-parse --absolute-git-dir)" &&
+
+	test-tool path-utils relative_path "$superproject_gitdir" \
+		"$submodule_gitdir" >expect &&
+	git -C sub1 config submodule.superprojectGitDir >actual &&
+
+	test_cmp expect actual
 '
 
 test_expect_success 'absorbing does not fail for deinitialized submodules' '
@@ -61,7 +71,16 @@ test_expect_success 'absorb the git dir in a nested submodule' '
 	git status >actual.1 &&
 	git -C sub1/nested rev-parse HEAD >actual.2 &&
 	test_cmp expect.1 actual.1 &&
-	test_cmp expect.2 actual.2
+	test_cmp expect.2 actual.2 &&
+
+	sub1_gitdir="$(git -C sub1 rev-parse --absolute-git-dir)" &&
+	sub1_nested_gitdir="$(git -C sub1/nested rev-parse --absolute-git-dir)" &&
+
+	test-tool path-utils relative_path "$sub1_gitdir" "$sub1_nested_gitdir" \
+		>expect &&
+	git -C sub1/nested config submodule.superprojectGitDir >actual &&
+
+	test_cmp expect actual
 '
 
 test_expect_success 're-setup nested submodule' '
