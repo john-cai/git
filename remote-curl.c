@@ -125,6 +125,7 @@ static int set_option(const char *name, const char *value)
 	else if (!strcmp(name, "cas")) {
 		struct strbuf val = STRBUF_INIT;
 		strbuf_addstr(&val, "--force-with-lease=");
+		trace_printf("force-with-lease is %s", value);
 		if (*value != '"')
 			strbuf_addstr(&val, value);
 		else if (unquote_c_style(&val, value, NULL))
