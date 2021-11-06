@@ -16,6 +16,7 @@
 #include "packfile.h"
 #include "object-store.h"
 #include "promisor-remote.h"
+#include "strvec.h"
 
 struct batch_options {
 	int enabled;
@@ -26,7 +27,9 @@ struct batch_options {
 	int unordered;
 	int cmdmode; /* may be 'w' or 'c' for --filters or --textconv */
 	const char *format;
+	int stdin_cmd;
 };
+static char line_termination = '\n';
 
 static const char *force_path;
 
@@ -508,6 +511,99 @@ static int batch_unordered_packed(const struct object_id *oid,
 				      data);
 }
 
+enum batch_state {
+	/* Non-transactional state open for commands. */
+	BATCH_STATE_OPEN,
+};
+
+static void parse_cmd_object(struct batch_options *opt,
+			     const char *line,
+			     struct strbuf *output,
+			     struct expand_data *data)
+{
+	opt->print_contents = 1;
+	batch_one_object(line, output, opt, data);
+}
+
+static void parse_cmd_info(struct batch_options *opt,
+			   const char *line,
+			   struct strbuf *output,
+			   struct expand_data *data)
+{
+	opt->print_contents = 0;
+	batch_one_object(line, output, opt, data);
+}
+
+static void parse_cmd_fflush(struct batch_options *opt,
+			     const char *line,
+			     struct strbuf *output,
+			     struct expand_data *data)
+{
+	fflush(stdout);
+}
+
+typedef void (*parse_cmd_fn_t)(struct batch_options *, const char *,
+			       struct strbuf *, struct expand_data *);
+
+static const struct parse_cmd {
+	const char *prefix;
+	parse_cmd_fn_t fn;
+	unsigned takes_args;
+	enum batch_state state;
+} commands[] = {
+	{ "object", parse_cmd_object, 1, BATCH_STATE_OPEN },
+	{ "info", parse_cmd_info, 1, BATCH_STATE_OPEN },
+	{ "fflush", parse_cmd_fflush, 0, BATCH_STATE_OPEN },
+};
+
+static void batch_objects_stdin_cmd(struct batch_options *opt,
+				    struct strbuf *output,
+				    struct expand_data *data)
+{
+	struct strbuf input = STRBUF_INIT;
+
+	/* Read each line dispatch its command */
+	while (!strbuf_getwholeline(&input, stdin, line_termination)) {
+		int i;
+		const struct parse_cmd *cmd = NULL;
+		const char *p, *cmd_end;
+
+		if (*input.buf == line_termination)
+			die("empty command in input");
+		else if (isspace(*input.buf))
+			die("whitespace before command: %s", input.buf);
+
+		for (i = 0; i < ARRAY_SIZE(commands); i++) {
+			const char *prefix = commands[i].prefix;
+			char c;
+			if (!skip_prefix(input.buf, prefix, &cmd_end))
+				continue;
+			/*
+			 * If the command has arguments, verify that it's
+			 * followed by a space. Otherwise, it shall be followed
+			 * by a line terminator.
+			 */
+			c = commands[i].takes_args ? ' ' : line_termination;
+			if (input.buf[strlen(prefix)] != c)
+				die("arguments invalid for command: %s", commands[i].prefix);
+
+			cmd = &commands[i];
+			if (cmd->takes_args) {
+				p = cmd_end + 1;
+				input.buf[strcspn(input.buf, "\n")] = '\0';
+			}
+
+			break;
+		}
+
+		if (!cmd)
+			die("unknown command: %s", input.buf);
+
+		cmd->fn(opt, p, output, data);
+	}
+	strbuf_release(&input);
+}
+
 static int batch_objects(struct batch_options *opt)
 {
 	struct strbuf input = STRBUF_INIT;
@@ -515,6 +611,7 @@ static int batch_objects(struct batch_options *opt)
 	struct expand_data data;
 	int save_warning;
 	int retval = 0;
+	const int stdin_cmd = opt->stdin_cmd;
 
 	if (!opt->format)
 		opt->format = "%(objectname) %(objecttype) %(objectsize)";
@@ -590,6 +687,9 @@ static int batch_objects(struct batch_options *opt)
 	save_warning = warn_on_object_refname_ambiguity;
 	warn_on_object_refname_ambiguity = 0;
 
+	if (stdin_cmd)
+		batch_objects_stdin_cmd(opt, &output, &data);
+
 	while (strbuf_getline(&input, stdin) != EOF) {
 		if (data.split_on_whitespace) {
 			/*
@@ -636,6 +736,7 @@ static int batch_option_callback(const struct option *opt,
 
 	bo->enabled = 1;
 	bo->print_contents = !strcmp(opt->long_name, "batch");
+	bo->stdin_cmd = !strcmp(opt->long_name, "batch-command");
 	bo->format = arg;
 
 	return 0;
@@ -683,6 +784,10 @@ int cmd_cat_file(int argc, const char **argv, const char *prefix)
 			N_("like --batch, but don't emit <contents>"),
 			PARSE_OPT_OPTARG | PARSE_OPT_NONEG,
 			batch_option_callback),
+		OPT_CALLBACK_F(0, "batch-command", &batch, N_(""),
+			 N_("enters batch mode that accepts commands"),
+			 PARSE_OPT_NOARG | PARSE_OPT_NONEG,
+			 batch_option_callback),
 		OPT_CMDMODE(0, "batch-all-objects", &opt,
 			    N_("with --batch[-check]: ignores stdin, batches all known objects"), 'b'),
 		/* Batch-specific options */

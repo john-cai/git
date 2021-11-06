@@ -112,6 +112,46 @@ maybe_remove_timestamp () {
     fi
 }
 
+run_buffer_test () {
+	type=$1
+	sha1=$2
+	size=$3
+	flush=$4
+
+	mkfifo V.input
+	exec 8<>V.input
+	rm V.input
+
+	mkfifo V.output
+	exec 9<>V.output
+	rm V.output
+	
+	(
+		git cat-file --buffer --batch-command <&8 >&9 &
+		echo $! >&9 &&
+		wait $!
+		echo >&9 EARLY_EXIT
+	) &
+	sh_pid=$!
+	read fi_pid <&9
+	test_when_finished "
+		exec 8>&-; exec 9>&-;
+		kill $sh_pid && wait $sh_pid
+		kill $fi_pid && wait $fi_pid
+		true"
+	expect=$(echo "$sha1 $type $size")
+	echo "info $sha1" >&8
+	if test "$flush" = "true"
+	then
+		echo "fflush" >&8
+	else
+		expect="EARLY_EXIT"
+		kill $fi_pid && wait $fi_pid
+	fi
+	read actual <&9
+	test "$actual" = "$expect"
+}
+
 run_tests () {
     type=$1
     sha1=$2
@@ -177,6 +217,18 @@ $content"
 	test_cmp expect actual
     '
 
+    test -z "$content" ||
+    test_expect_success "--batch-command output of $type content is correct" '
+	maybe_remove_timestamp "$batch_output" $no_ts >expect &&
+	maybe_remove_timestamp "$(echo object $sha1 | git cat-file --batch-command)" $no_ts >actual &&
+	test_cmp expect actual
+    '
+
+    test_expect_success "batch-command output of $type info is correct" '
+	echo "$sha1 $type $size" >expect &&
+	echo "info $sha1" | git cat-file --batch-command >actual &&
+	test_cmp expect actual
+'
     test_expect_success "custom --batch-check format" '
 	echo "$type $sha1" >expect &&
 	echo $sha1 | git cat-file --batch-check="%(objecttype) %(objectname)" >actual &&
@@ -232,11 +284,28 @@ test_expect_success '--batch-check without %(rest) considers whole line' '
 	test_cmp expect actual
 '
 
+test_expect_success '--batch-command --buffer with flush is correct for blob' '
+	run_buffer_test 'blob' $hello_sha1 $hello_size true
+'
+
+test_expect_success '--batch-command --buffer without flush is correct for blob' '
+	run_buffer_test 'blob' $hello_sha1 $hello_size false
+'
+
 tree_sha1=$(git write-tree)
+
 tree_size=$(($(test_oid rawsz) + 13))
 tree_pretty_content="100644 blob $hello_sha1	hello"
 
 run_tests 'tree' $tree_sha1 $tree_size "" "$tree_pretty_content"
+
+test_expect_success '--batch-command --buffer with flush is correct for tree' '
+	run_buffer_test 'tree' $tree_sha1 $tree_size true
+'
+
+test_expect_success '--batch-command --buffer without flush is correct for tree' '
+	run_buffer_test 'tree' $tree_sha1 $tree_size false
+'
 
 commit_message="Initial commit"
 commit_sha1=$(echo_without_newline "$commit_message" | git commit-tree $tree_sha1)
@@ -262,6 +331,14 @@ tag_sha1=$(echo_without_newline "$tag_content" | git hash-object -t tag --stdin 
 tag_size=$(strlen "$tag_content")
 
 run_tests 'tag' $tag_sha1 $tag_size "$tag_content" "$tag_content" 1
+
+test_expect_success '--batch-command --buffer with flush is correct for tag' '
+	run_buffer_test 'tag' $tag_sha1 $tag_size true
+'
+
+test_expect_success '--batch-command --buffer without flush is correct for tag' '
+	run_buffer_test 'tag' $tag_sha1 $tag_size false
+'
 
 test_expect_success \
     "Reach a blob from a tag pointing to it" \
@@ -962,6 +1039,12 @@ test_expect_success 'cat-file --batch-all-objects --batch-check ignores replace'
 	grep ^$orig actual.raw >actual &&
 	echo "$orig commit $orig_size" >expect &&
 	test_cmp expect actual
+'
+
+test_expect_success 'batch-command unknown command' '
+	echo unknown_command >cmd &&
+	test_expect_code 128 git cat-file --batch-command < cmd 2>err &&
+	grep -E "^fatal:.*unknown command.*" err
 '
 
 test_done

@@ -96,6 +96,21 @@ OPTIONS
 	need to specify the path, separated by whitespace.  See the
 	section `BATCH OUTPUT` below for details.
 
+--batch-command::
+	Enter a command mode that reads from stdin. May not be combined with any
+	other options or arguments except `--textconv` or `--filters`, in which
+	case the input lines also need to specify the path, separated by
+	whitespace.  See the section `BATCH OUTPUT` below for details.
+
+object <object>::
+	Print object contents for object reference <object>
+
+info <object>::
+	Print object info for object reference <object>
+
+flush::
+	Flush to stdout immediately when used with --buffer
+
 --batch-all-objects::
 	Instead of reading a list of objects on stdin, perform the
 	requested batch operation on all objects in the repository and
