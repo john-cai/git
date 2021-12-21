@@ -517,32 +517,30 @@ enum batch_state {
 };
 
 static void parse_cmd_object(struct batch_options *opt,
-			     const char *next, const char *end,
+			     const int argc, struct string_list_item *argv,
 			     struct strbuf *output,
 			     struct expand_data *data)
 {
-	size_t len = end - next - 1;
-	char *p = (char *)next;
-	char old = p[len];
-
-	p[len] = '\0';
-	batch_one_object(next, output, opt, data);
-	p[len] = old;
+	batch_one_object(argv[0].string, output, opt, data);
 }
 
 static void parse_cmd_fflush(struct batch_options *opt,
-			     const char *next, const char *end,
+			     const int argc, struct string_list_item *argv,
 			     struct strbuf *output,
 			     struct expand_data *data)
 {
-	if (*next != line_termination)
-		die("fflush: extra input: %s", next);
+	if (argc > 0)
+		die("fflush: extra input: %s", argv[0].string);
 	fflush(stdout);
 }
 
 static const struct parse_cmd {
 	const char *prefix;
-	void (*fn)(struct batch_options *, const char *, const char *, struct strbuf *, struct expand_data *);
+	void (*fn)(struct batch_options *,
+		const int argc,
+		struct string_list_item *argv,
+		struct strbuf *,
+		struct expand_data *);
 	unsigned args;
 	enum batch_state state;
 } command[] = {
@@ -559,7 +557,7 @@ static void batch_objects_stdin_cmd(struct batch_options *opt,
 
 	/* Read each line dispatch its command */
 	while (!strbuf_getwholeline(&input, stdin, line_termination)) {
-		size_t i, j;
+		size_t i;
 		const struct parse_cmd *cmd = NULL;
 
 		if (*input.buf == line_termination)
@@ -590,13 +588,24 @@ static void batch_objects_stdin_cmd(struct batch_options *opt,
 			die("unknown command: %s", input.buf);
 
 		/*
-		 * Read additional arguments if NUL-terminated. Do not raise an
-		 * error in case there is an early EOF to let the command
+		 * Read additional arguments. Do not raise an error in 
+		 * case there is an early EOF to let the command
 		 * handle missing arguments with a proper error message.
 		 */
-		for (j = 1; line_termination == '\0' && j < cmd->args; j++)
-			if (strbuf_appendwholeline(&input, stdin, line_termination))
-				break;
+		if (input.buf[input.len - 1] == '\n')
+			input.buf[input.len - 1] = '\0';
+
+		struct string_list l = STRING_LIST_INIT_DUP;
+		string_list_split(&l, input.buf+strlen(cmd->prefix)+1,
+				line_termination, 
+				cmd->args);
+
+		int found_args = l.nr;
+		if (l.nr == 1 && !strcmp(l.items[0].string, ""))
+				found_args = 0;
+		
+		if (found_args < cmd->args)
+			die("too few arguments for %s", cmd->prefix);
 
 		switch (state) {
 		case BATCH_STATE_OPEN:
@@ -604,8 +613,8 @@ static void batch_objects_stdin_cmd(struct batch_options *opt,
 			break;
 		}
 
-		cmd->fn(opt, input.buf + strlen(cmd->prefix) + !!cmd->args,
-			input.buf + input.len, output, data);
+		cmd->fn(opt, found_args, l.items, output, data);
+		string_list_clear(&l, 0);
 	}
 
 	strbuf_release(&input);
