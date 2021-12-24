@@ -248,6 +248,7 @@ static const char *name_ref_abbrev(const char *refname, int shorten_unambiguous)
 struct name_ref_data {
 	int tags_only;
 	int name_only;
+	int allow_undefined;
 	struct string_list ref_filters;
 	struct string_list exclude_filters;
 };
@@ -527,8 +528,8 @@ static void name_rev_line(char *p, struct name_ref_data *data)
 int cmd_name_rev(int argc, const char **argv, const char *prefix)
 {
 	struct object_array revs = OBJECT_ARRAY_INIT;
-	int all = 0, transform_stdin = 0, allow_undefined = 1, always = 0, peel_tag = 0;
-	struct name_ref_data data = { 0, 0, STRING_LIST_INIT_NODUP, STRING_LIST_INIT_NODUP };
+	int all = 0, transform_stdin = 0, always = 0, peel_tag = 0;
+	struct name_ref_data data = { 0, 0, 1, STRING_LIST_INIT_NODUP, STRING_LIST_INIT_NODUP };
 	struct option opts[] = {
 		OPT_BOOL(0, "name-only", &data.name_only, N_("print only ref-based names (no object names)")),
 		OPT_BOOL(0, "tags", &data.tags_only, N_("only use tags to name the commits")),
@@ -539,7 +540,7 @@ int cmd_name_rev(int argc, const char **argv, const char *prefix)
 		OPT_GROUP(""),
 		OPT_BOOL(0, "all", &all, N_("list all commits reachable from all refs")),
 		OPT_BOOL(0, "stdin", &transform_stdin, N_("read from stdin")),
-		OPT_BOOL(0, "undefined", &allow_undefined, N_("allow to print `undefined` names (default)")),
+		OPT_BOOL(0, "undefined", &data.allow_undefined, N_("allow to print `undefined` names (default)")),
 		OPT_BOOL(0, "always",     &always,
 			   N_("show abbreviated commit object as fallback")),
 		{
@@ -631,13 +632,13 @@ int cmd_name_rev(int argc, const char **argv, const char *prefix)
 			if (!obj || obj->type != OBJ_COMMIT)
 				continue;
 			show_name(obj, NULL,
-				  always, allow_undefined, data.name_only);
+				  always, data.allow_undefined, data.name_only);
 		}
 	} else {
 		int i;
 		for (i = 0; i < revs.nr; i++)
 			show_name(revs.objects[i].item, revs.objects[i].name,
-				  always, allow_undefined, data.name_only);
+				  always, data.allow_undefined, data.name_only);
 	}
 
 	UNLEAK(revs);
