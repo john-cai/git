@@ -507,8 +507,11 @@ static void name_rev_line(char *p, struct name_ref_data *data)
 			}
 			*(p+1) = c;
 
-			if (!name)
+			if (!name) {
+				if (!data->allow_undefined)
+					die("cannot describe '%s'", oid_to_hex(&oid));
 				continue;
+			}
 
 			if (data->name_only)
 				printf("%.*s%s", p_len - hexsz, p_start, name);
