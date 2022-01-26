@@ -30,7 +30,7 @@ struct expire_reflog_policy_cb {
 	unsigned int dry_run:1;
 };
 
-int reflog_delete(const char*, int);
+int reflog_delete(const char*, int, int);
 void reflog_expiry_cleanup(void *);
 void reflog_expiry_prepare(const char*, const struct object_id*,
 			   void *);

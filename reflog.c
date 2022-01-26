@@ -1,14 +1,13 @@
 #include "cache.h"
-#include "refs.h"
 #include "commit.h"
-#include "reflog.h"
 #include "object-store.h"
 #include "reachable.h"
-#include "revision.h"
 #include "reachable.h"
-#include "worktree.h"
+#include "reflog.h"
+#include "refs.h"
+#include "revision.h"
 #include "tree-walk.h"
-
+#include "worktree.h"
 /*
  * Starting from commits in the cb->mark_list, mark commits that are
  * reachable from them.  Stop the traversal at commits older than
