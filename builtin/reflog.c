@@ -293,7 +293,6 @@ static int cmd_reflog_expire(int argc, const char **argv, const char *prefix)
 
 static int cmd_reflog_delete(int argc, const char **argv, const char *prefix)
 {
-	struct cmd_reflog_expire_cb cmd = { 0 };
 	int i, status = 0;
 	unsigned int flags = 0;
 	int verbose = 0;
@@ -318,47 +317,11 @@ static int cmd_reflog_delete(int argc, const char **argv, const char *prefix)
 			break;
 	}
 
-	if (verbose)
-		should_prune_fn = should_expire_reflog_ent_verbose;
-
 	if (argc - i < 1)
 		return error(_("no reflog specified to delete"));
 
 	for ( ; i < argc; i++) {
-		const char *spec = strstr(argv[i], "@{");
-		char *ep, *ref;
-		int recno;
-		struct expire_reflog_policy_cb cb = {
-			.dry_run = !!(flags & EXPIRE_REFLOGS_DRY_RUN),
-		};
-
-		if (!spec) {
-			status |= error(_("not a reflog: %s"), argv[i]);
-			continue;
-		}
-
-		if (!dwim_log(argv[i], spec - argv[i], NULL, &ref)) {
-			status |= error(_("no reflog for '%s'"), argv[i]);
-			continue;
-		}
-
-		recno = strtoul(spec + 2, &ep, 10);
-		if (*ep == '}') {
-			cmd.recno = -recno;
-			for_each_reflog_ent(ref, count_reflog_ent, &cmd);
-		} else {
-			cmd.expire_total = approxidate(spec + 2);
-			for_each_reflog_ent(ref, count_reflog_ent, &cmd);
-			cmd.expire_total = 0;
-		}
-
-		cb.cmd = cmd;
-		status |= reflog_expire(ref, flags,
-					reflog_expiry_prepare,
-					should_prune_fn,
-					reflog_expiry_cleanup,
-					&cb);
-		free(ref);
+		status |= reflog_delete(argv[i], flags, verbose);
 	}
 	return status;
 }

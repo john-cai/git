@@ -1,14 +1,13 @@
 #include "cache.h"
-#include "refs.h"
 #include "commit.h"
-#include "reflog.h"
 #include "object-store.h"
 #include "reachable.h"
-#include "revision.h"
 #include "reachable.h"
-#include "worktree.h"
+#include "reflog.h"
+#include "refs.h"
+#include "revision.h"
 #include "tree-walk.h"
-
+#include "worktree.h"
 /*
  * Starting from commits in the cb->mark_list, mark commits that are
  * reachable from them.  Stop the traversal at commits older than
@@ -390,6 +389,9 @@ int reflog_delete(const char *rev, int flags, int verbose)
 	struct cmd_reflog_expire_cb cmd = { 0 };
 	int status = 0;
 	reflog_expiry_should_prune_fn *should_prune_fn = should_expire_reflog_ent;
+
+	if (verbose)
+		should_prune_fn = should_expire_reflog_ent_verbose;
 
 	const char *spec = strstr(rev, "@{");
 	char *ep, *ref;
