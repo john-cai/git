@@ -177,6 +177,29 @@ $content"
 	test_cmp expect actual
     '
 
+    test -z "$content" ||
+    test_expect_success "--batch-command output of $type content is correct" '
+	maybe_remove_timestamp "$batch_output" $no_ts >expect &&
+	maybe_remove_timestamp "$(test_write_lines "contents $sha1" "flush" \
+	| git cat-file --batch-command)" $no_ts >actual &&
+	test_cmp expect actual
+    '
+
+    test -z "$content" ||
+    test_expect_success "--batch-command session for $type content is correct" '
+	maybe_remove_timestamp "$batch_output" $no_ts >expect &&
+	maybe_remove_timestamp \
+		"$(test_write_lines "contents $sha1" "flush" | git cat-file --batch-command)" \
+		$no_ts >actual &&
+	test_cmp expect actual
+    '
+
+    test_expect_success "--batch-command output of $type info is correct" '
+	echo "$sha1 $type $size" >expect &&
+	test_write_lines "info $sha1" "flush" | git cat-file --batch-command >actual &&
+	test_cmp expect actual
+    '
+
     test_expect_success "custom --batch-check format" '
 	echo "$type $sha1" >expect &&
 	echo $sha1 | git cat-file --batch-check="%(objecttype) %(objectname)" >actual &&
@@ -267,7 +290,7 @@ test_expect_success \
     "Reach a blob from a tag pointing to it" \
     "test '$hello_content' = \"\$(git cat-file blob $tag_sha1)\""
 
-for batch in batch batch-check
+for batch in batch batch-check batch-command
 do
     for opt in t s e p
     do
@@ -369,8 +392,60 @@ deadbeef missing
  missing"
 
 test_expect_success "--batch-check with multiple sha1s gives correct format" '
-    test "$batch_check_output" = \
-    "$(echo_without_newline "$batch_check_input" | git cat-file --batch-check)"
+	test "$batch_check_output" = "$(echo_without_newline "$batch_check_input" | git cat-file --batch-check)"
+'
+
+batch_command_info_input="info $hello_sha1
+info $tree_sha1
+info $commit_sha1
+info $tag_sha1
+info deadbeef
+info 
+flush
+"
+
+test_expect_success "--batch-command with multiple info calls gives correct format" '
+	test "$batch_check_output" = "$(echo_without_newline \
+	"$batch_command_info_input" | git cat-file --batch-command)"
+'
+
+batch_command_contents_input="contents $hello_sha1
+contents $commit_sha1
+contents $tag_sha1
+contents deadbeef
+contents 
+flush
+"
+
+test_expect_success "--batch-command with multiple contents calls gives correct format" '
+	test "$(maybe_remove_timestamp "$batch_output" 1)" = "$(maybe_remove_timestamp "$(echo_without_newline "$batch_command_contents_input" | git cat-file --batch-command)" 1)"
+'
+
+batch_command_mixed_input="info $hello_sha1
+contents $hello_sha1
+info $commit_sha1
+contents $commit_sha1
+info $tag_sha1
+contents $tag_sha1
+contents deadbeef
+info 
+flush
+"
+
+batch_command_mixed_output="$hello_sha1 blob $hello_size
+$hello_sha1 blob $hello_size
+$hello_content
+$commit_sha1 commit $commit_size
+$commit_sha1 commit $commit_size
+$commit_content
+$tag_sha1 tag $tag_size
+$tag_sha1 tag $tag_size
+$tag_content
+deadbeef missing
+ missing"
+
+test_expect_success "--batch-command with mixed calls gives correct format" '
+	test "$(maybe_remove_timestamp "$batch_command_mixed_output" 1)" = "$(maybe_remove_timestamp "$(echo_without_newline "$batch_command_mixed_input" | git cat-file --batch-command)" 1)"
 '
 
 test_expect_success 'setup blobs which are likely to delta' '
@@ -962,6 +1037,24 @@ test_expect_success 'cat-file --batch-all-objects --batch-check ignores replace'
 	grep ^$orig actual.raw >actual &&
 	echo "$orig commit $orig_size" >expect &&
 	test_cmp expect actual
+'
+
+test_expect_success 'batch-command unknown command' '
+	echo unknown_command >cmd &&
+	test_expect_code 128 git cat-file --batch-command < cmd 2>err &&
+	grep -E "^fatal:.*unknown command.*" err
+'
+
+test_expect_success 'batch-command flush with arguments' '
+	echo "flush arg" >cmd &&
+	test_expect_code 128 git cat-file --batch-command < cmd 2>err &&
+	grep -E "^fatal:.*flush takes no arguments.*" err
+'
+
+test_expect_success 'batch-command flush empty queue' '
+	echo flush >cmd &&
+	test_expect_code 128 git cat-file --batch-command < cmd 2>err &&
+	grep -E "^fatal:.*nothing to flush.*" err
 '
 
 test_done
