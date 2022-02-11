@@ -237,20 +237,17 @@ static void expand_atom(struct strbuf *sb, const char *atom, int len,
 {
 	struct expand_data *data = vdata;
 
-	trace_printf("expand_atom %s",atom);
 	if (is_atom("objectname", atom, len)) {
 		if (!data->mark_query)
 			strbuf_addstr(sb, oid_to_hex(&data->oid));
 	} else if (is_atom("objecttype", atom, len)) {
 		if (data->mark_query){
-			trace_printf("objecttype: %d", data->type);
 			data->info.typep = &data->type;
 		}
 		else
 			strbuf_addstr(sb, type_name(data->type));
 	} else if (is_atom("objectsize", atom, len)) {
 		if (data->mark_query){
-			trace_printf("size: %lu", data->size);
 			data->info.sizep = &data->size;
 		}
 		else
@@ -357,6 +354,14 @@ static void print_object_or_die(struct batch_options *opt, struct expand_data *d
 	}
 }
 
+static void print_default_format(char *buf, int len, struct expand_data *data)
+{
+	snprintf(buf, len, "%s %s %"PRIuMAX"\n", oid_to_hex(&data->oid),
+		 data->info.type_name->buf,
+		 (uintmax_t)*data->info.sizep);
+
+}
+
 /*
  * If "pack" is non-NULL, then "offset" is the byte offset within the pack from
  * which the object may be accessed (though note that we may also rely on
@@ -394,26 +399,26 @@ static void batch_object_write(const char *obj_name,
 	if (!opt->format && !opt->print_contents) {
 		char buf[1024];
 
-		snprintf(buf, sizeof(buf), "%s %s %"PRIuMAX"\n", oid_to_hex(&data->oid),
-			 data->info.type_name->buf,
-			 (uintmax_t)*data->info.sizep);
-
+        	print_default_format(buf, 1024, data);
 		batch_write(opt, buf, strlen(buf));
-	} else {
-		const char *fmt = opt->format ? opt->format : default_format;
-		strbuf_reset(scratch);
-		strbuf_expand(scratch, fmt, expand_format, data);
-		strbuf_addch(scratch, '\n');
-		batch_write(opt, scratch->buf, scratch->len);
-
-		if (opt->print_contents) {
-			print_object_or_die(opt, data);
-			batch_write(opt, "\n", 1);
-		}
+		goto cleanup;
 	}
+
+	const char *fmt = opt->format ? opt->format : default_format;
+	strbuf_reset(scratch);
+	strbuf_expand(scratch, fmt, expand_format, data);
+	strbuf_addch(scratch, '\n');
+	batch_write(opt, scratch->buf, scratch->len);
+
+	if (opt->print_contents) {
+		print_object_or_die(opt, data);
+		batch_write(opt, "\n", 1);
+	}
+
 	cleanup:
 	strbuf_release(&type_name);
 }
+
 
 static void batch_one_object(const char *obj_name,
 			     struct strbuf *scratch,

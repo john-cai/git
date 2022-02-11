@@ -3,7 +3,7 @@
 test_description='Basic sort performance tests'
 . ./perf-lib.sh
 
-test_perf_default_repo
+test_perf_large_repo
 
 test_expect_success 'setup' '
 	git rev-list --all >rla
