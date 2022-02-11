@@ -237,17 +237,22 @@ static void expand_atom(struct strbuf *sb, const char *atom, int len,
 {
 	struct expand_data *data = vdata;
 
+	trace_printf("expand_atom %s",atom);
 	if (is_atom("objectname", atom, len)) {
 		if (!data->mark_query)
 			strbuf_addstr(sb, oid_to_hex(&data->oid));
 	} else if (is_atom("objecttype", atom, len)) {
-		if (data->mark_query)
+		if (data->mark_query){
+			trace_printf("objecttype: %d", data->type);
 			data->info.typep = &data->type;
+		}
 		else
 			strbuf_addstr(sb, type_name(data->type));
 	} else if (is_atom("objectsize", atom, len)) {
-		if (data->mark_query)
+		if (data->mark_query){
+			trace_printf("size: %lu", data->size);
 			data->info.sizep = &data->size;
+		}
 		else
 			strbuf_addf(sb, "%"PRIuMAX , (uintmax_t)data->size);
 	} else if (is_atom("objectsize:disk", atom, len)) {
@@ -533,7 +538,6 @@ static int batch_objects(struct batch_options *opt)
 	struct expand_data data;
 	int save_warning;
 	int retval = 0;
-	const char *fmt;
 
 	/*
 	 * Expand once with our special mark_query flag, which will prime the
@@ -541,11 +545,16 @@ static int batch_objects(struct batch_options *opt)
 	 * object.
 	 */
 	memset(&data, 0, sizeof(data));
-	data.mark_query = 1;
-	fmt = opt->format ? opt->format : default_format;
-	strbuf_expand(&output, fmt, expand_format, &data);
-	data.mark_query = 0;
-	strbuf_release(&output);
+	if (!opt->format || !strcmp(opt->format, default_format)){
+		data.info.typep = &data.type;
+		data.info.sizep = &data.size;
+	}else {
+		data.mark_query = 1;
+		strbuf_expand(&output, opt->format, expand_format, &data);
+		data.mark_query = 0;
+		strbuf_release(&output);
+	}
+
 	if (opt->cmdmode)
 		data.split_on_whitespace = 1;
 
