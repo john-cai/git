@@ -400,6 +400,10 @@ static int process_ref_v2(struct packet_reader *reader, struct ref ***list,
 		goto out;
 	}
 
+	if (!strcmp("error", line_sections.items[0].string)) {
+		die(_("fatal: %s"), line_sections.items[1].string);
+	}
+
 	if (!strcmp("unborn", line_sections.items[i].string)) {
 		i++;
 		if (unborn_head_target &&
