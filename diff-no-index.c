@@ -10,6 +10,7 @@
 #include "blob.h"
 #include "tag.h"
 #include "diff.h"
+#include "xdiff-interface.h"
 #include "diffcore.h"
 #include "revision.h"
 #include "log-tree.h"
@@ -283,6 +284,9 @@ int diff_no_index(struct rev_info *revs,
 	revs->diffopt.skip_stat_unmatch = 1;
 	if (!revs->diffopt.output_format)
 		revs->diffopt.output_format = DIFF_FORMAT_PATCH;
+
+	if (DIFF_ALG_OR_MIN(&revs->diffopt))
+		revs->diffopt.xdl_opts_command_line = 1;
 
 	revs->diffopt.flags.no_index = 1;
 
