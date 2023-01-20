@@ -107,8 +107,20 @@ EOF
 
 	STRATEGY=$1
 
+	test_expect_success "$STRATEGY diff from attributes" '
+		echo "file* diff-algorithm=$STRATEGY" >.gitattributes &&
+		test_must_fail git diff --no-index file1 file2 > output &&
+		test_cmp expect output
+	'
+
 	test_expect_success "$STRATEGY diff" '
-		test_must_fail git diff --no-index "--$STRATEGY" file1 file2 > output &&
+		test_must_fail git diff --no-index "--diff-algorithm=$STRATEGY" file1 file2 > output &&
+		test_cmp expect output
+	'
+
+	test_expect_success "$STRATEGY diff command line precedence" '
+		echo "file* diff-algorithm=meyers" >.gitattributes &&
+		test_must_fail git diff --no-index "--diff-algorithm=$STRATEGY" file1 file2 > output &&
 		test_cmp expect output
 	'
 
@@ -164,6 +176,12 @@ EOF
 
 	test_expect_success 'completely different files' '
 		test_must_fail git diff --no-index "--$STRATEGY" uniq1 uniq2 > output &&
+		test_cmp expect output
+	'
+
+	test_expect_success "$STRATEGY diff from attributes" '
+		echo "file* diff-algorithm=$STRATEGY" >.gitattributes &&
+		test_must_fail git diff --no-index uniq1 uniq2 > output &&
 		test_cmp expect output
 	'
 }

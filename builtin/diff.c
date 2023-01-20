@@ -13,6 +13,7 @@
 #include "blob.h"
 #include "tag.h"
 #include "diff.h"
+#include "xdiff-interface.h"
 #include "diff-merges.h"
 #include "diffcore.h"
 #include "revision.h"
@@ -506,6 +507,9 @@ int cmd_diff(int argc, const char **argv, const char *prefix)
 		rev.diffopt.output_format = DIFF_FORMAT_PATCH;
 		diff_setup_done(&rev.diffopt);
 	}
+
+	if (DIFF_ALG_OR_MIN(&rev.diffopt))
+		rev.diffopt.xdl_opts_command_line = 1;
 
 	rev.diffopt.flags.recursive = 1;
 	rev.diffopt.rotate_to_strict = 1;

@@ -3634,6 +3634,9 @@ static void builtin_diff(const char *name_a,
 		xdemitconf_t xecfg;
 		struct emit_callback ecbdata;
 		const struct userdiff_funcname *pe;
+		static struct attr_check *check;
+		const char *one_diff_algo;
+		const char *two_diff_algo;
 
 		if (must_show_header) {
 			emit_diff_symbol(o, DIFF_SYMBOL_HEADER,
@@ -3661,6 +3664,23 @@ static void builtin_diff(const char *name_a,
 		ecbdata.opt = o;
 		if (header.len && !o->flags.suppress_diff_headers)
 			ecbdata.header = &header;
+
+		if (!o->xdl_opts_command_line) {
+			check = attr_check_alloc();
+			attr_check_append(check, git_attr("diff-algorithm"));
+
+			git_check_attr(the_repository->index, NULL, one->path, check);
+			one_diff_algo = check->items[0].value;
+			git_check_attr(the_repository->index, NULL, two->path, check);
+			two_diff_algo = check->items[0].value;
+
+			if (!ATTR_UNSET(one_diff_algo) && !ATTR_UNSET(two_diff_algo) &&
+				!strcmp(one_diff_algo, two_diff_algo))
+				set_diff_algorithm(o, one_diff_algo, 0);
+
+			attr_check_free(check);
+		}
+
 		xpp.flags = o->xdl_opts;
 		xpp.ignore_regex = o->ignore_regex;
 		xpp.ignore_regex_nr = o->ignore_regex_nr;

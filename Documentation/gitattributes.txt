@@ -736,6 +736,29 @@ String::
 	by the configuration variables in the "diff.foo" section of the
 	Git config file.
 
+`diff-algorithm`
+^^^^^^^^^^^^^^^^
+
+The attribute `diff-algorithm` affects which algorithm Git uses to generate
+diffs. This allows defining diff algorithms per file extension. Precedence rules
+are as follows, in order from highest to lowest:
+
+*Command line option*
+
+Pass in the `--diff-algorithm` command line option int git-diff(1)
+
+*Git attributes*
+
+------------------------
+*.json	diff-algorithm=histogram
+------------------------
+
+*Git config*
+
+----------------------------------------------------------------
+[diff]
+	algorithm = histogram
+----------------------------------------------------------------
 
 Defining an external diff driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
