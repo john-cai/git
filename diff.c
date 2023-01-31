@@ -3448,8 +3448,7 @@ static int set_diff_algorithm(struct diff_options *opts,
 			       "\"minimal\", \"patience\" and \"histogram\""));
 
 	/* clear out previous settings */
-	DIFF_XDL_CLR(opts, NEED_MINIMAL);
-	opts->xdl_opts &= ~XDF_DIFF_ALGORITHM_MASK;
+	opts->xdl_opts &= ~XDF_DIFF_ALG_OR_MIN_MASK;
 	opts->xdl_opts |= value;
 
 	if (command_line)
