@@ -484,6 +484,11 @@ int git_diff_basic_config(const char *var, const char *value, void *cb)
 	return git_default_config(var, value, cb);
 }
 
+int diff_alg_or_min(struct diff_options *opts)
+{
+	return opts->xdl_opts & XDF_DIFF_ALG_OR_MIN_MASK;
+}
+
 static char *quote_two(const char *one, const char *two)
 {
 	int need_one = quote_c_style(one, NULL, NULL, CQUOTE_NODQ);
@@ -3437,6 +3442,26 @@ static int diff_filepair_is_phoney(struct diff_filespec *one,
 	return !DIFF_FILE_VALID(one) && !DIFF_FILE_VALID(two);
 }
 
+static int set_diff_algorithm(struct diff_options *opts,
+			      const char *alg,
+			      int command_line)
+{
+	long value = parse_algorithm_value(alg);
+
+	if (value < 0)
+		return error(_("option diff-algorithm accepts \"myers\", "
+			       "\"minimal\", \"patience\" and \"histogram\""));
+
+	/* clear out previous settings */
+	opts->xdl_opts &= ~XDF_DIFF_ALG_OR_MIN_MASK;
+	opts->xdl_opts |= value;
+
+	if (command_line)
+		opts->xdl_opts_command_line = command_line;
+
+	return 0;
+}
+
 static void builtin_diff(const char *name_a,
 			 const char *name_b,
 			 struct diff_filespec *one,
@@ -5106,18 +5131,9 @@ static int diff_opt_compact_summary(const struct option *opt,
 static int diff_opt_diff_algorithm(const struct option *opt,
 				   const char *arg, int unset)
 {
-	struct diff_options *options = opt->value;
-	long value = parse_algorithm_value(arg);
-
 	BUG_ON_OPT_NEG(unset);
-	if (value < 0)
-		return error(_("option diff-algorithm accepts \"myers\", "
-			       "\"minimal\", \"patience\" and \"histogram\""));
 
-	/* clear out previous settings */
-	options->xdl_opts &= ~XDF_DIFF_ALG_OR_MIN_MASK;
-	options->xdl_opts |= value;
-	return 0;
+	return set_diff_algorithm(opt->value, arg, 1);
 }
 
 static int diff_opt_dirstat(const struct option *opt,

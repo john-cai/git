@@ -698,4 +698,6 @@ void print_stat_summary(FILE *fp, int files,
 			int insertions, int deletions);
 void setup_diff_pager(struct diff_options *);
 
+int diff_alg_or_min(struct diff_options *);
+
 #endif /* DIFF_H */
