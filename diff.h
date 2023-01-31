@@ -333,6 +333,8 @@ struct diff_options {
 	int prefix_length;
 	const char *stat_sep;
 	int xdl_opts;
+	/* If xdl_opts has been set via the command line. */
+	int xdl_opts_command_line;
 
 	/* see Documentation/diff-options.txt */
 	char **anchors;
