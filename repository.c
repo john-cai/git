@@ -25,7 +25,9 @@
 extern struct repository *the_repository;
 
 /* The main repository */
-static struct repository the_repo;
+static struct repository the_repo = {
+	.is_bare_cfg = -1,
+};
 struct repository *the_repository = &the_repo;
 
 /*
@@ -266,7 +268,8 @@ static int read_and_verify_repository_format(struct repository_format *format,
  */
 int repo_init(struct repository *repo,
 	      const char *gitdir,
-	      const char *worktree)
+	      const char *worktree,
+	      int is_bare)
 {
 	struct repository_format format = REPOSITORY_FORMAT_INIT;
 	memset(repo, 0, sizeof(*repo));
@@ -283,6 +286,9 @@ int repo_init(struct repository *repo,
 	repo_set_compat_hash_algo(repo, format.compat_hash_algo);
 	repo_set_ref_storage_format(repo, format.ref_storage_format);
 	repo->repository_format_worktree_config = format.worktree_config;
+	if (is_bare > 0) {
+		repo->is_bare_cfg = is_bare;
+	}
 
 	/* take ownership of format.partial_clone */
 	repo->repository_format_partial_clone = format.partial_clone;
@@ -314,7 +320,7 @@ int repo_submodule_init(struct repository *subrepo,
 	strbuf_repo_worktree_path(&gitdir, superproject, "%s/.git", path);
 	strbuf_repo_worktree_path(&worktree, superproject, "%s", path);
 
-	if (repo_init(subrepo, gitdir.buf, worktree.buf)) {
+	if (repo_init(subrepo, gitdir.buf, worktree.buf, superproject->is_bare_cfg)) {
 		/*
 		 * If initialization fails then it may be due to the submodule
 		 * not being populated in the superproject's worktree.  Instead
@@ -332,7 +338,7 @@ int repo_submodule_init(struct repository *subrepo,
 		strbuf_reset(&gitdir);
 		submodule_name_to_gitdir(&gitdir, superproject, sub->name);
 
-		if (repo_init(subrepo, gitdir.buf, NULL)) {
+		if (repo_init(subrepo, gitdir.buf, NULL, superproject->is_bare_cfg)) {
 			ret = -1;
 			goto out;
 		}
@@ -452,4 +458,10 @@ int repo_hold_locked_index(struct repository *repo,
 	if (!repo->index_file)
 		BUG("the repo hasn't been setup");
 	return hold_lock_file_for_update(lf, repo->index_file, flags);
+}
+
+int repo_is_bare(struct repository *repo)
+{
+	/* if core.bare is not 'false', let's see if there is a work tree */
+	return repo->is_bare_cfg && !repo_get_work_tree(repo);
 }

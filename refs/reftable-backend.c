@@ -163,7 +163,7 @@ static int should_write_log(struct reftable_ref_store *refs, const char *refname
 {
 	enum log_refs_config log_refs_cfg = refs->log_all_ref_updates;
 	if (log_refs_cfg == LOG_REFS_UNSET)
-		log_refs_cfg = is_bare_repository() ? LOG_REFS_NONE : LOG_REFS_NORMAL;
+		log_refs_cfg = repo_is_bare(refs->base.repo) ? LOG_REFS_NONE : LOG_REFS_NORMAL;
 
 	switch (log_refs_cfg) {
 	case LOG_REFS_NONE:
@@ -1042,7 +1042,7 @@ static int reftable_be_transaction_prepare(struct ref_store *ref_store,
 
 		/*
 		 * When we update the reference that HEAD points to we enqueue
-		 * a second log-only update for HEAD so that its reflog is
+		 * a second eog-only update for HEAD so that its reflog is
 		 * updated accordingly.
 		 */
 		if (head_type == REF_ISSYMREF &&
