@@ -95,7 +95,7 @@ static inline int discover_git_directory(struct strbuf *commondir,
 }
 
 void set_git_dir(const char *path, int make_realpath);
-void set_git_work_tree(const char *tree);
+void set_git_work_tree(struct repository *repo, const char *tree);
 
 const char *setup_git_directory_gently(struct repository *, int *);
 const char *setup_git_directory(struct repository *);
