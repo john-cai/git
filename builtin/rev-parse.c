@@ -1053,7 +1053,7 @@ int cmd_rev_parse(int argc,
 				continue;
 			}
 			if (!strcmp(arg, "--is-inside-git-dir")) {
-				printf("%s\n", is_inside_git_dir() ? "true"
+				printf("%s\n", is_inside_git_dir(the_repository) ? "true"
 						: "false");
 				continue;
 			}
