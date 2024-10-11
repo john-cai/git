@@ -301,7 +301,7 @@ void verify_filename(struct repository *repo,
  */
 void verify_non_filename(const char *prefix, const char *arg)
 {
-	if (!is_inside_work_tree() || is_inside_git_dir())
+	if (!is_inside_work_tree() || is_inside_git_dir(the_repository))
 		return;
 	if (*arg == '-')
 		return; /* flag */
@@ -472,10 +472,10 @@ int is_nonbare_repository_dir(struct strbuf *path)
 	return ret;
 }
 
-int is_inside_git_dir(void)
+int is_inside_git_dir(struct repository *repo)
 {
 	if (inside_git_dir < 0)
-		inside_git_dir = is_inside_dir(repo_get_git_dir(the_repository));
+		inside_git_dir = is_inside_dir(repo_get_git_dir(repo));
 	return inside_git_dir;
 }
 
