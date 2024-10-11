@@ -686,9 +686,9 @@ static unsigned parse_score(const char *arg)
 	return score;
 }
 
-static char *add_prefix(const char *prefix, const char *path)
+static char *add_prefix(struct repository *repo, const char *prefix, const char *path)
 {
-	return prefix_path(prefix, prefix ? strlen(prefix) : 0, path);
+	return prefix_path(repo, prefix, prefix ? strlen(prefix) : 0, path);
 }
 
 static int git_blame_config(const char *var, const char *value,
@@ -1070,7 +1070,7 @@ parse_done:
 			argv[2] = "--";
 			/* FALLTHROUGH */
 		case 1: /* (1a) */
-			path = add_prefix(prefix, argv[--argc]);
+			path = add_prefix(the_repository, prefix, argv[--argc]);
 			argv[argc] = NULL;
 			break;
 		default:
@@ -1080,12 +1080,12 @@ parse_done:
 		if (argc < 2)
 			usage_with_options(opt_usage, options);
 		if (argc == 3 && is_a_rev(argv[argc - 1])) { /* (2b) */
-			path = add_prefix(prefix, argv[1]);
+			path = add_prefix(the_repository, prefix, argv[1]);
 			argv[1] = argv[2];
 		} else {	/* (2a) */
 			if (argc == 2 && is_a_rev(argv[1]) && !repo_get_work_tree(the_repository))
 				die("missing <path> to blame");
-			path = add_prefix(prefix, argv[argc - 1]);
+			path = add_prefix(the_repository, prefix, argv[argc - 1]);
 		}
 		argv[argc - 1] = "--";
 	}
