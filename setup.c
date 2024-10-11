@@ -51,13 +51,13 @@ const char *tmp_original_cwd;
  * /dir/repolink/file     (repolink points to /dir/repo) -> file
  * /dir/repo              (exactly equal to work tree)   -> (empty string)
  */
-static int abspath_part_inside_repo(char *path)
+static int abspath_part_inside_repo(struct repository *repo, char *path)
 {
 	size_t len;
 	size_t wtlen;
 	char *path0;
 	int off;
-	const char *work_tree = precompose_string_if_needed(repo_get_work_tree(the_repository));
+	const char *work_tree = precompose_string_if_needed(repo_get_work_tree(repo));
 	struct strbuf realpath = STRBUF_INIT;
 
 	if (!work_tree)
@@ -133,7 +133,7 @@ char *prefix_path_gently(const char *prefix, int len,
 			free(sanitized);
 			return NULL;
 		}
-		if (abspath_part_inside_repo(sanitized)) {
+		if (abspath_part_inside_repo(the_repository, sanitized)) {
 			free(sanitized);
 			return NULL;
 		}
