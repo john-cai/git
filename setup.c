@@ -2251,15 +2251,15 @@ static int is_reinit(void)
 	return ret;
 }
 
-void create_reference_database(enum ref_storage_format ref_storage_format,
+void create_reference_database(struct repository *repo, enum ref_storage_format ref_storage_format,
 			       const char *initial_branch, int quiet)
 {
 	struct strbuf err = STRBUF_INIT;
 	char *to_free = NULL;
 	int reinit = is_reinit();
 
-	repo_set_ref_storage_format(the_repository, ref_storage_format);
-	if (ref_store_create_on_disk(get_main_ref_store(the_repository), 0, &err))
+	repo_set_ref_storage_format(repo, ref_storage_format);
+	if (ref_store_create_on_disk(get_main_ref_store(repo), 0, &err))
 		die("failed to set up refs db: %s", err.buf);
 
 	/*
@@ -2271,14 +2271,14 @@ void create_reference_database(enum ref_storage_format ref_storage_format,
 
 		if (!initial_branch)
 			initial_branch = to_free =
-				repo_default_branch_name(the_repository, quiet);
+				repo_default_branch_name(repo, quiet);
 
 		ref = xstrfmt("refs/heads/%s", initial_branch);
 		if (check_refname_format(ref, 0) < 0)
 			die(_("invalid initial branch name: '%s'"),
 			    initial_branch);
 
-		if (refs_update_symref(get_main_ref_store(the_repository), "HEAD", ref, NULL) < 0)
+		if (refs_update_symref(get_main_ref_store(repo), "HEAD", ref, NULL) < 0)
 			exit(1);
 		free(ref);
 	}
@@ -2523,7 +2523,7 @@ static void repository_format_configure(struct repository_format *repo_fmt,
 	repo_set_ref_storage_format(the_repository, repo_fmt->ref_storage_format);
 }
 
-int init_db(const char *git_dir, const char *real_git_dir,
+int init_db(struct repository *repo, const char *git_dir, const char *real_git_dir,
 	    const char *template_dir, int hash,
 	    enum ref_storage_format ref_storage_format,
 	    const char *initial_branch,
@@ -2544,12 +2544,12 @@ int init_db(const char *git_dir, const char *real_git_dir,
 			die(_("%s already exists"), real_git_dir);
 
 		set_git_dir(real_git_dir, 1);
-		git_dir = repo_get_git_dir(the_repository);
+		git_dir = repo_get_git_dir(repo);
 		separate_git_dir(git_dir, original_git_dir);
 	}
 	else {
 		set_git_dir(git_dir, 1);
-		git_dir = repo_get_git_dir(the_repository);
+		git_dir = repo_get_git_dir(repo);
 	}
 	startup_info->have_repository = 1;
 
@@ -2559,7 +2559,7 @@ int init_db(const char *git_dir, const char *real_git_dir,
 	 * config file, so this will not fail.  What we are catching
 	 * is an attempt to reinitialize new repository with an old tool.
 	 */
-	check_repository_format(the_repository, &repo_fmt);
+	check_repository_format(repo, &repo_fmt);
 
 	repository_format_configure(&repo_fmt, hash, ref_storage_format);
 
@@ -2572,11 +2572,11 @@ int init_db(const char *git_dir, const char *real_git_dir,
 
 	safe_create_dir(git_dir, 0);
 
-	reinit = create_default_files(the_repository, template_dir, original_git_dir,
+	reinit = create_default_files(repo, template_dir, original_git_dir,
 				      &repo_fmt, init_shared_repository);
 
 	if (!(flags & INIT_DB_SKIP_REFDB))
-		create_reference_database(repo_fmt.ref_storage_format,
+		create_reference_database(repo, repo_fmt.ref_storage_format,
 					  initial_branch, flags & INIT_DB_QUIET);
 	create_object_directory();
 
