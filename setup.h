@@ -186,7 +186,7 @@ int verify_repository_format(const struct repository_format *format,
  *
  * If successful and fmt is not NULL, fill fmt with data.
  */
-void check_repository_format(struct repository_format *fmt);
+void check_repository_format(struct repository *repo, struct repository_format *fmt);
 
 const char *get_template_dir(const char *option_template);
 
