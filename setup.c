@@ -2136,7 +2136,7 @@ static void copy_templates_1(struct strbuf *path, struct strbuf *template_path,
 	}
 }
 
-static void copy_templates(const char *option_template)
+static void copy_templates(struct repository *repo, const char *option_template)
 {
 	const char *template_dir = get_template_dir(option_template);
 	struct strbuf path = STRBUF_INIT;
@@ -2177,7 +2177,7 @@ static void copy_templates(const char *option_template)
 		goto close_free_return;
 	}
 
-	strbuf_addstr(&path, repo_get_common_dir(the_repository));
+	strbuf_addstr(&path, repo_get_common_dir(repo));
 	strbuf_complete(&path, '/');
 	copy_templates_1(&path, &template_path, dir);
 close_free_return:
@@ -2291,7 +2291,8 @@ void create_reference_database(enum ref_storage_format ref_storage_format,
 	free(to_free);
 }
 
-static int create_default_files(const char *template_path,
+static int create_default_files(struct repository *repo,
+				const char *template_path,
 				const char *original_git_dir,
 				const struct repository_format *fmt,
 				int init_shared_repository)
@@ -2301,7 +2302,7 @@ static int create_default_files(const char *template_path,
 	char *path;
 	int reinit;
 	int filemode;
-	const char *work_tree = repo_get_work_tree(the_repository);
+	const char *work_tree = repo_get_work_tree(repo);
 
 	/*
 	 * First copy the templates -- we might have the default
@@ -2312,7 +2313,7 @@ static int create_default_files(const char *template_path,
 	 * values (since we've just potentially changed what's available on
 	 * disk).
 	 */
-	copy_templates(template_path);
+	copy_templates(repo, template_path);
 	git_config_clear();
 	reset_shared_repository();
 	git_config(git_default_config, NULL);
@@ -2333,7 +2334,7 @@ static int create_default_files(const char *template_path,
 	 * shared-repository settings, we would need to fix them up.
 	 */
 	if (get_shared_repository()) {
-		adjust_shared_perm(repo_get_git_dir(the_repository));
+		adjust_shared_perm(repo_get_git_dir(repo));
 	}
 
 	initialize_repository_version(fmt->hash_algo, fmt->ref_storage_format, 0);
@@ -2357,7 +2358,7 @@ static int create_default_files(const char *template_path,
 	else {
 		git_config_set("core.bare", "false");
 		/* allow template config file to override the default */
-		if (repo_settings_get_log_all_ref_updates(the_repository) == LOG_REFS_UNSET)
+		if (repo_settings_get_log_all_ref_updates(repo) == LOG_REFS_UNSET)
 			git_config_set("core.logallrefupdates", "true");
 		if (needs_work_tree_config(original_git_dir, work_tree))
 			git_config_set("core.worktree", work_tree);
@@ -2571,7 +2572,7 @@ int init_db(const char *git_dir, const char *real_git_dir,
 
 	safe_create_dir(git_dir, 0);
 
-	reinit = create_default_files(template_dir, original_git_dir,
+	reinit = create_default_files(the_repository, template_dir, original_git_dir,
 				      &repo_fmt, init_shared_repository);
 
 	if (!(flags & INIT_DB_SKIP_REFDB))
