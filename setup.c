@@ -2470,7 +2470,7 @@ out:
 	return ret;
 }
 
-static void repository_format_configure(struct repository_format *repo_fmt,
+static void repository_format_configure(struct repository *repo, struct repository_format *repo_fmt,
 					int hash, enum ref_storage_format ref_format)
 {
 	struct default_format_config cfg = {
@@ -2504,7 +2504,7 @@ static void repository_format_configure(struct repository_format *repo_fmt,
 	} else if (cfg.hash != GIT_HASH_UNKNOWN) {
 		repo_fmt->hash_algo = cfg.hash;
 	}
-	repo_set_hash_algo(the_repository, repo_fmt->hash_algo);
+	repo_set_hash_algo(repo, repo_fmt->hash_algo);
 
 	env = getenv("GIT_DEFAULT_REF_FORMAT");
 	if (repo_fmt->version >= 0 &&
@@ -2521,7 +2521,7 @@ static void repository_format_configure(struct repository_format *repo_fmt,
 	} else if (cfg.ref_format != REF_STORAGE_FORMAT_UNKNOWN) {
 		repo_fmt->ref_storage_format = cfg.ref_format;
 	}
-	repo_set_ref_storage_format(the_repository, repo_fmt->ref_storage_format);
+	repo_set_ref_storage_format(repo, repo_fmt->ref_storage_format);
 }
 
 int init_db(struct repository *repo, const char *git_dir, const char *real_git_dir,
@@ -2562,7 +2562,7 @@ int init_db(struct repository *repo, const char *git_dir, const char *real_git_d
 	 */
 	check_repository_format(repo, &repo_fmt);
 
-	repository_format_configure(&repo_fmt, hash, ref_storage_format);
+	repository_format_configure(repo, &repo_fmt, hash, ref_storage_format);
 
 	/*
 	 * Ensure `core.hidedotfiles` is processed. This must happen after we
