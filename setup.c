@@ -149,13 +149,13 @@ char *prefix_path_gently(const char *prefix, int len,
 	return sanitized;
 }
 
-char *prefix_path(const char *prefix, int len, const char *path)
+char *prefix_path(struct repository *repo, const char *prefix, int len, const char *path)
 {
 	char *r = prefix_path_gently(prefix, len, NULL, path);
 	if (!r) {
-		const char *hint_path = repo_get_work_tree(the_repository);
+		const char *hint_path = repo_get_work_tree(repo);
 		if (!hint_path)
-			hint_path = repo_get_git_dir(the_repository);
+			hint_path = repo_get_git_dir(repo);
 		die(_("'%s' is outside repository at '%s'"), path,
 		    absolute_path(hint_path));
 	}

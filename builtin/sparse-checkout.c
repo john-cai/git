@@ -722,7 +722,7 @@ static void sanitize_paths(int argc, const char **argv,
 		int prefix_len = strlen(prefix);
 
 		for (i = 0; i < argc; i++)
-			argv[i] = prefix_path(prefix, prefix_len, argv[i]);
+			argv[i] = prefix_path(the_repository, prefix, prefix_len, argv[i]);
 	}
 
 	if (skip_checks)

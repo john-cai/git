@@ -660,7 +660,7 @@ static int do_unresolve(int ac, const char **av,
 
 	for (i = 1; i < ac; i++) {
 		const char *arg = av[i];
-		char *p = prefix_path(prefix, prefix_length, arg);
+		char *p = prefix_path(the_repository, prefix, prefix_length, arg);
 		err |= unresolve_one(p);
 		free(p);
 	}
@@ -1092,7 +1092,7 @@ int cmd_update_index(int argc,
 			char *p;
 
 			setup_work_tree();
-			p = prefix_path(prefix, prefix_length, path);
+			p = prefix_path(the_repository, prefix, prefix_length, path);
 			update_one(p);
 			if (set_executable_bit)
 				chmod_path(set_executable_bit, p);
@@ -1142,7 +1142,7 @@ int cmd_update_index(int argc,
 					die("line is badly quoted");
 				strbuf_swap(&buf, &unquoted);
 			}
-			p = prefix_path(prefix, prefix_length, buf.buf);
+			p = prefix_path(the_repository, prefix, prefix_length, buf.buf);
 			update_one(p);
 			if (set_executable_bit)
 				chmod_path(set_executable_bit, p);
