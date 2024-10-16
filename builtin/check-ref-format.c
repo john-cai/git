@@ -1,8 +1,6 @@
 /*
  * GIT - The information manager from hell
  */
-#define USE_THE_REPOSITORY_VARIABLE
-
 #include "builtin.h"
 #include "refs.h"
 #include "setup.h"
@@ -34,17 +32,18 @@ static char *collapse_slashes(const char *refname)
 	return ret;
 }
 
-static int check_ref_format_branch(const char *arg)
+static int check_ref_format_branch(struct repository *repo, const char *branch)
 {
 	struct strbuf sb = STRBUF_INIT;
 	const char *name;
 	int nongit;
 
-	setup_git_directory_gently(the_repository, &nongit);
+	setup_git_directory_gently(repo, &nongit);
 
-	if (strbuf_check_branch_ref(&sb, arg) ||
+	if (strbuf_check_branch_ref(&sb, branch) ||
 	    !skip_prefix(sb.buf, "refs/heads/", &name))
-		die("'%s' is not a valid branch name", arg);
+		die("'%s' is not a valid branch name", branch);
+
 	printf("%s\n", name);
 	strbuf_release(&sb);
 	return 0;
@@ -53,7 +52,7 @@ static int check_ref_format_branch(const char *arg)
 int cmd_check_ref_format(int argc,
 			 const char **argv,
 			 const char *prefix,
-			 struct repository *repo UNUSED)
+			 struct repository *repo)
 {
 	int normalize = 0;
 	int flags = 0;
@@ -78,12 +77,10 @@ int cmd_check_ref_format(int argc,
 		OPT_END()
 	};
 
-	BUG_ON_NON_EMPTY_PREFIX(prefix);
-
 	argc = parse_options(argc, argv, prefix, options, usage, 0);
 
 	if (branch)
-		return check_ref_format_branch(branch);
+		return check_ref_format_branch(repo, branch);
 
 	refname = argv[0];
 	if (normalize)
