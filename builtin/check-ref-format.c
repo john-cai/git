@@ -7,10 +7,7 @@
 #include "refs.h"
 #include "setup.h"
 #include "strbuf.h"
-
-static const char builtin_check_ref_format_usage[] =
-"git check-ref-format [--normalize] [<options>] <refname>\n"
-"   or: git check-ref-format --branch <branchname-shorthand>";
+#include "parse-options.h"
 
 /*
  * Return a copy of refname but with leading slashes removed and runs
@@ -44,6 +41,7 @@ static int check_ref_format_branch(const char *arg)
 	int nongit;
 
 	setup_git_directory_gently(the_repository, &nongit);
+
 	if (strbuf_check_branch_ref(&sb, arg) ||
 	    !skip_prefix(sb.buf, "refs/heads/", &name))
 		die("'%s' is not a valid branch name", arg);
@@ -57,37 +55,37 @@ int cmd_check_ref_format(int argc,
 			 const char *prefix,
 			 struct repository *repo UNUSED)
 {
-	int i;
 	int normalize = 0;
 	int flags = 0;
 	const char *refname;
+	const char *branch = NULL;
 	char *to_free = NULL;
 	int ret = 1;
 
+	const char * usage[] = {
+		N_("git check-ref-format [--normalize] [<options>] <refname>"),
+		N_("git check-ref-format --branch <branchname-shorthand>"),
+		NULL
+	};
+
+	const struct option options[] = {
+		OPT_STRING(0, "branch", &branch, N_("branch"), N_("the branch to use")),
+		OPT_BOOL(0, "normalize", &normalize, N_("normalize")),
+		OPT_BOOL(0, "print", &normalize, N_("print")),
+		OPT_BIT(0, "allow-onelevel", &flags, N_("allow one level"), REFNAME_ALLOW_ONELEVEL),
+		OPT_NEGBIT(1, "no-allow-onelevel", &flags, N_("do not allow one level"), REFNAME_ALLOW_ONELEVEL),
+		OPT_BIT(0, "refspec-pattern", &flags, N_("refspec pattern"), REFNAME_REFSPEC_PATTERN),
+		OPT_END()
+	};
+
 	BUG_ON_NON_EMPTY_PREFIX(prefix);
 
-	if (argc == 2 && !strcmp(argv[1], "-h"))
-		usage(builtin_check_ref_format_usage);
+	argc = parse_options(argc, argv, prefix, options, usage, 0);
 
-	if (argc == 3 && !strcmp(argv[1], "--branch"))
-		return check_ref_format_branch(argv[2]);
+	if (branch)
+		return check_ref_format_branch(branch);
 
-	for (i = 1; i < argc && argv[i][0] == '-'; i++) {
-		if (!strcmp(argv[i], "--normalize") || !strcmp(argv[i], "--print"))
-			normalize = 1;
-		else if (!strcmp(argv[i], "--allow-onelevel"))
-			flags |= REFNAME_ALLOW_ONELEVEL;
-		else if (!strcmp(argv[i], "--no-allow-onelevel"))
-			flags &= ~REFNAME_ALLOW_ONELEVEL;
-		else if (!strcmp(argv[i], "--refspec-pattern"))
-			flags |= REFNAME_REFSPEC_PATTERN;
-		else
-			usage(builtin_check_ref_format_usage);
-	}
-	if (! (i == argc - 1))
-		usage(builtin_check_ref_format_usage);
-
-	refname = argv[i];
+	refname = argv[0];
 	if (normalize)
 		refname = to_free = collapse_slashes(refname);
 	if (check_refname_format(refname, flags))
